@@ -33,7 +33,7 @@ app.post('/login', function (req, res) {
         }
 
         // create Request object
-        var request = new sql.Request();
+        let request = new sql.Request();
 
         // query to the database and get the records
         request.query(
@@ -42,26 +42,25 @@ app.post('/login', function (req, res) {
             WHERE user_login = '${req.body.login}' AND user_password = '${req.body.password}'`,
             function (err, records) {
 
-            if (err) {
-                res.status(err.status || 500).json({err: err.message || ""});
-            }
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
 
-            // send records as a response
-            if (records.recordset.length === 0) {
-                res.send({success: false});
-            } else {
-                res.send({
-                    success: true,
-                    login: records.recordset
-                });
-            }
-        });
+                // send records as a response
+                if (records.recordset.length === 0) {
+                    res.send({success: false});
+                } else {
+                    res.send({
+                        success: true,
+                        login: records.recordset
+                    });
+                }
+            });
     });
 });
 
 // registry user
 app.post('/registry', function (req, res) {
-
     sql.close();
 
     // connect to your database
@@ -72,12 +71,114 @@ app.post('/registry', function (req, res) {
         }
 
         // create Request object
-        var request = new sql.Request();
+        let request = new sql.Request();
 
         // query to the database and get the records
         request.query(
             `INSERT Users 
             VALUES ('${req.body.firstName}', '${req.body.lastName}', '${req.body.login}', '${req.body.password}', '${req.body.dateOfBirth}')`,
+            function (err, records) {
+
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+
+                res.send(records);
+            });
+    });
+});
+
+// get agency
+app.get('/agency/:id', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `SELECT *
+            FROM Agency
+            WHERE id_agency = ${req.params.id}`,
+            function (err, records) {
+
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+
+                res.send(records.recordset);
+            });
+    });
+});
+
+// add agency
+app.post('/agency', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `INSERT Agency
+            VALUES ('${req.body.email}', '${req.body.phone}', '${req.body.agencyName}')`,
+            function (err, records) {
+
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+
+                res.send(records);
+            });
+    })
+});
+
+// update agency
+app.put('/agency/:id', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `UPDATE Agency
+            SET email = '${req.body.email}', phone = '${req.body.phone}', agency_name = '${req.body.agencyName}'
+            WHERE id_agency = ${req.params.id}`,
+            function (err, records) {
+
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+
+                res.send(records);
+            });
+    });
+});
+
+// delete agency
+app.delete('/agency/:id', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `DELETE Agency
+            WHERE id_agency = ${req.params.id}`,
             function (err, records) {
 
                 if (err) {
@@ -98,7 +199,7 @@ app.get('/tours/:page', function (req, res) {
             res.status(err.status || 500).json({err: err.message || ""});
         }
 
-        var request = new sql.Request();
+        let request = new sql.Request();
 
         request.query(
             `SELECT *
@@ -124,7 +225,7 @@ app.post('/tour', function (req, res) {
             res.status(err.status || 500).json({err: err.message || ""});
         }
 
-        var request = new sql.Request();
+        let request = new sql.Request();
 
         request.query(
             `INSERT Tour
@@ -150,7 +251,7 @@ app.put('/tour/:id', function (req, res) {
             res.status(err.status || 500).json({err: err.message || ""});
         }
 
-        var request = new sql.Request();
+        let request = new sql.Request();
 
         request.query(
             `UPDATE Tour
@@ -178,7 +279,7 @@ app.delete('/tour/:id', function (req, res) {
             res.status(err.status || 500).json({err: err.message || ""});
         }
 
-        var request = new sql.Request();
+        let request = new sql.Request();
 
         request.query(
             `DELETE Tour
