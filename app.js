@@ -202,8 +202,18 @@ app.get('/tours/:page', function (req, res) {
         let request = new sql.Request();
 
         request.query(
-            `SELECT *
+            `SELECT Tour.id_tour, category_name, city, country, tour_name, tour_description, photo,
+            (SELECT AVG(CAST(rating AS decimal(6,4))) FROM Rating WHERE Rating.id_tour = Tour.id_tour) AS tour_rating,
+            (SELECT COUNT(*) FROM Comment WHERE Comment.id_tour = Tour.id_tour) AS amount_comments
             FROM Tour
+            LEFT JOIN Category
+            ON Category.id_category = Tour.id_category
+            LEFT JOIN Hotel
+            ON Hotel.id_hotel = Tour.id_hotel
+            LEFT JOIN Cities
+            ON Hotel.id_city = Cities.id_city
+            LEFT JOIN Countries
+            ON Countries.id_country = Cities.id_country
             ORDER BY tour_name OFFSET ${(req.params.page - 1) * 10} ROWS FETCH NEXT 10 ROWS ONLY`,
             function (err, records) {
 
@@ -291,6 +301,197 @@ app.delete('/tour/:id', function (req, res) {
                 }
 
                 res.send(records);
+            });
+    })
+});
+
+// get categories
+app.get('/categories', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `SELECT *
+            FROM Category`,
+            function (err, records) {
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+                res.send(records.recordset);
+            });
+    })
+});
+
+// add category
+app.post('/category', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `INSERT Category
+            VALUES ('${req.body.categoryName}')`,
+            function (err, records) {
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+                res.send(records);
+            });
+    })
+});
+
+// update category
+app.put('/category/:id', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `UPDATE Category
+            SET category_name = '${req.body.categoryName}'
+            WHERE id_category = ${req.params.id}`,
+            function (err, records) {
+
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+
+                res.send(records);
+            });
+    })
+});
+
+// get countries
+app.get('/countries', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `SELECT *
+            FROM Countries`,
+            function (err, records) {
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+                res.send(records.recordset);
+            });
+    })
+});
+
+// get cities
+app.get('/cities', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `SELECT *
+            FROM Cities`,
+            function (err, records) {
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+                res.send(records.recordset);
+            });
+    })
+});
+
+//get tour by id
+app.get('/tour/:id', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `SELECT Tour.id_tour, tour_name, tour_description, photo, email, phone, agency_name, category_name,
+            node_order, duration, hotel_name, rating AS hotel_rating, city, country, 
+            (SELECT AVG(CAST(rating AS decimal(6,4))) FROM Rating WHERE id_tour = ${req.params.id}) AS tour_rating
+            FROM Tour
+            JOIN Agency
+            ON Agency.id_agency = Tour.id_agency
+            JOIN Category
+            ON Category.id_category = Tour.id_category
+            LEFT JOIN RoutesNode
+            ON RoutesNode.id_tour = ${req.params.id}
+            JOIN Hotel
+            ON Hotel.id_hotel = Tour.id_hotel OR Hotel.id_hotel = RoutesNode.id_hotel
+            JOIN Cities
+            ON Hotel.id_city = Cities.id_city
+            JOIN Countries
+            ON Countries.id_country = Cities.id_country
+            WHERE Tour.id_tour = ${req.params.id}`,
+            function (err, records) {
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+                let recordset = records.recordset;
+                let tour = {};
+                let routesNodes = [];
+
+                if(recordset.length > 1) {
+                    for (let i = 0; i < recordset.length; i++) {
+                        routesNodes.push({
+                            order: recordset[i].node_order,
+                            duration: recordset[i].duration,
+                            city: recordset[i].city,
+                            country: recordset[i].country,
+                            hotel: {
+                                name: recordset[i].hotel_name,
+                                rating: recordset[i].hotel_rating
+                            }
+                        })
+                    }
+                    let tempTour = recordset[0];
+                    tour = {
+                        idTour: tempTour.id_tour,
+                        tourName: tempTour.tour_name,
+                        tourDescription: tempTour.tour_description,
+                        tourPhoto: tempTour.photo,
+                        tourCategory: tempTour.category_name,
+                        tourRating: tempTour.tour_rating,
+                        agency: {
+                            email: tempTour.email,
+                            phone: tempTour.phone,
+                            name: tempTour.agency_name
+                        },
+                        routesNodes: routesNodes
+                    }
+                    res.send(tour);
+                } else {
+                    res.send(recordset);
+                }
             });
     })
 });
