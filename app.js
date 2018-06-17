@@ -679,6 +679,32 @@ app.post('/package/service', function (req, res) {
     })
 });
 
+// delete service from travel package
+app.delete('/package/:packageId/service/:serviceId', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `DELETE Package_Services
+            WHERE id_service = ${req.params.serviceId} AND id_package = ${req.params.packageId}`,
+            function (err, records) {
+
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+
+                res.send(records);
+            }
+        );
+    })
+});
+
 var server = app.listen(5000, function () {
     console.log('Server is running..');
 });
