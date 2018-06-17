@@ -597,6 +597,88 @@ app.get('/services/package/:id', function (req, res) {
     })
 });
 
+// get tour services
+app.get('/services/tour/package/:id', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `SELECT TServices.id_service, TServices.name_service, Tour.id_tour, Tour.id_agency, Agency_Services.price
+            FROM TServices
+            JOIN Tour
+            ON id_tour IN 
+            (SELECT id_tour
+            FROM TravelPackage
+            WHERE TravelPackage.id_package = ${req.params.id})
+            JOIN Agency_Services
+            ON Tour.id_agency = Agency_Services.id_agency AND TServices.id_service = Agency_Services.id_service`,
+            function (err, records) {
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+                res.send(records.recordset);
+            }
+        );
+    })
+});
+
+// buy travel package
+app.put('/package/:packageId/user/:userId', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `UPDATE TravelPackage
+            SET id_user = ${req.params.userId}
+            WHERE id_package = ${req.params.packageId}`,
+            function (err, records) {
+
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+
+                res.send(records);
+            }
+        );
+    })
+});
+
+// add service to travel package
+app.post('/package/service', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `INSERT Package_Services
+            VALUES (${req.body.packageId}, ${req.body.serviceId})`,
+            function (err, records) {
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+                res.send(records);
+            }
+        );
+    })
+});
+
 var server = app.listen(5000, function () {
     console.log('Server is running..');
 });
