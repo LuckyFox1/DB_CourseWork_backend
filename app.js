@@ -55,7 +55,8 @@ app.post('/login', function (req, res) {
                         login: records.recordset
                     });
                 }
-            });
+            }
+        );
     });
 });
 
@@ -84,7 +85,8 @@ app.post('/registry', function (req, res) {
                 }
 
                 res.send(records);
-            });
+            }
+        );
     });
 });
 
@@ -110,7 +112,8 @@ app.get('/agency/:id', function (req, res) {
                 }
 
                 res.send(records.recordset);
-            });
+            }
+        );
     });
 });
 
@@ -135,7 +138,8 @@ app.post('/agency', function (req, res) {
                 }
 
                 res.send(records);
-            });
+            }
+        );
     })
 });
 
@@ -161,7 +165,8 @@ app.put('/agency/:id', function (req, res) {
                 }
 
                 res.send(records);
-            });
+            }
+        );
     });
 });
 
@@ -186,7 +191,8 @@ app.delete('/agency/:id', function (req, res) {
                 }
 
                 res.send(records);
-            });
+            }
+        );
     });
 });
 
@@ -222,7 +228,8 @@ app.get('/tours/:page', function (req, res) {
                 }
 
                 res.send(records.recordset);
-            });
+            }
+        );
     })
 });
 
@@ -248,7 +255,8 @@ app.post('/tour', function (req, res) {
                 }
 
                 res.send(records);
-            });
+            }
+        );
     })
 });
 
@@ -276,7 +284,8 @@ app.put('/tour/:id', function (req, res) {
                 }
 
                 res.send(records);
-            });
+            }
+        );
     })
 });
 
@@ -301,7 +310,8 @@ app.delete('/tour/:id', function (req, res) {
                 }
 
                 res.send(records);
-            });
+            }
+        );
     })
 });
 
@@ -324,7 +334,8 @@ app.get('/categories', function (req, res) {
                     res.status(err.status || 500).json({err: err.message || ""});
                 }
                 res.send(records.recordset);
-            });
+            }
+        );
     })
 });
 
@@ -347,7 +358,8 @@ app.post('/category', function (req, res) {
                     res.status(err.status || 500).json({err: err.message || ""});
                 }
                 res.send(records);
-            });
+            }
+        );
     })
 });
 
@@ -373,7 +385,8 @@ app.put('/category/:id', function (req, res) {
                 }
 
                 res.send(records);
-            });
+            }
+        );
     })
 });
 
@@ -396,7 +409,8 @@ app.get('/countries', function (req, res) {
                     res.status(err.status || 500).json({err: err.message || ""});
                 }
                 res.send(records.recordset);
-            });
+            }
+        );
     })
 });
 
@@ -419,7 +433,8 @@ app.get('/cities', function (req, res) {
                     res.status(err.status || 500).json({err: err.message || ""});
                 }
                 res.send(records.recordset);
-            });
+            }
+        );
     })
 });
 
@@ -460,7 +475,7 @@ app.get('/tour/:id', function (req, res) {
                 let tour = {};
                 let routesNodes = [];
 
-                if(recordset.length > 1) {
+                if (recordset.length > 1) {
                     for (let i = 0; i < recordset.length; i++) {
                         routesNodes.push({
                             order: recordset[i].node_order,
@@ -487,12 +502,98 @@ app.get('/tour/:id', function (req, res) {
                             name: tempTour.agency_name
                         },
                         routesNodes: routesNodes
-                    }
+                    };
                     res.send(tour);
                 } else {
                     res.send(recordset);
                 }
-            });
+            }
+        );
+    })
+});
+
+// get tours packages
+app.get('/packages/tour/:id', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `SELECT *
+            FROM TravelPackage
+            WHERE id_tour = ${req.params.id} AND id_user IS NULL`,
+            function (err, records) {
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+                res.send(records.recordset);
+            }
+        );
+    })
+});
+
+// get package by id
+app.get('/package/:id', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `SELECT *
+            FROM TravelPackage
+            WHERE id_package = ${req.params.id}`,
+            function (err, records) {
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+                res.send(records.recordset);
+            }
+        );
+    })
+});
+
+// get package services
+app.get('/services/package/:id', function (req, res) {
+    sql.close();
+
+    sql.connect(config, function (err) {
+        if (err) {
+            res.status(err.status || 500).json({err: err.message || ""});
+        }
+
+        let request = new sql.Request();
+
+        request.query(
+            `SELECT TServices.id_service, TServices.name_service, Tour.id_agency, Agency_Services.price
+            FROM TServices
+            JOIN Tour
+            ON Tour.id_tour IN 
+            (SELECT TravelPackage.id_tour
+            FROM TravelPackage
+            WHERE TravelPackage.id_package = ${req.params.id})
+            JOIN Agency_Services
+            ON Tour.id_agency = Agency_Services.id_agency AND TServices.id_service = Agency_Services.id_service
+            WHERE TServices.id_service IN 
+            (SELECT Package_Services.id_service
+            FROM Package_Services
+            WHERE Package_Services.id_package = ${req.params.id})`,
+            function (err, records) {
+                if (err) {
+                    res.status(err.status || 500).json({err: err.message || ""});
+                }
+                res.send(records.recordset);
+            }
+        );
     })
 });
 
